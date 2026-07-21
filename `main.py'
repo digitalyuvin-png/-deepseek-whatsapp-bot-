@@ -1,0 +1,47 @@
+from flask import Flask, request
+import requests
+
+app = Flask(__name__)
+
+# ⚠️ YAHAN APNI KEYS DAAL
+DEEPSEEK_KEY = "sk-teri-deepseek-key-yahan-daAL"
+BOTBIZ_KEY = "teri-botbiz-key-yahan-daal"
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = request.json
+    msg = data.get("text", "")
+    phone = data.get("from", "")
+
+    if not msg:
+        return "ok"
+
+    # DeepSeek ko bhej
+    r = requests.post(
+        "https://api.deepseek.com/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {DEEPSEEK_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": "Tu ek helpful sales agent hai. Hinglish mein reply kar. Chhota aur helpful reply de."},
+                {"role": "user", "content": msg}
+            ]
+        }
+    )
+
+    reply = r.json()["choices"][0]["message"]["content"]
+
+    # Botbiz ko bhej
+    requests.post("https://api.botbiz.io/v1/messages/send", json={
+        "phone": phone,
+        "message": reply,
+        "api_key": BOTBIZ_KEY
+    })
+
+    return "ok"
+
+if __name__ == "__main__":
+    app.run(port=5000)
